@@ -2,13 +2,12 @@ from typing import List
 import numpy as np
 
 class GaussSolution:
-    def __init__(self, mat: np.ndarray):
-        if mat.shape[0] != mat.shape[1]:
-            raise Exception("Not a square matrix")
+    def __init__(self, mat: np.ndarray, line_position: int):
         if len(mat.shape) > 2:
             raise Exception("Matrix has more than 2 dimensions")
         self.length = mat.shape[0]
-        self.mat = np.append(mat,np.eye(mat.shape[0]),axis=1)
+        self.line_position = line_position
+        self.mat = mat.copy()
         self.command_history: List[str] = []
         self.matrix_history: List[np.ndarray] = [self.mat.copy()]
     
@@ -59,11 +58,12 @@ class GaussSolution:
     
         s = "\\begin{gmatrix}[p]\n"
         for row in mat:
-            for e in row[:self.length-1]:
+            i = 0
+            for e in row[:-1]:
                 s += f"\t{if_int(e)}\t&"
-            s += f"\t{if_int(row[self.length-1])} \\addline &"
-            for e in row[self.length:-1]:
-                s += f"\t{if_int(e)}\t&"
+                if self.line_position == i:
+                    s += f"\\addline\t&"
+                i += 1
             s += f"\t{if_int(row[-1])} \t\\\\\n"
         s = s[:-3] + "\n"
         
@@ -77,7 +77,7 @@ class GaussSolution:
     def get_latex_preamble(self):
         s = "% Put this in your preamble for matrix code to work\n"
         s += "\\usepackage{gauss}\n"
-        s += r"\newcommand\addline{\span\omit\raisebox{-1.4ex}[1ex][1ex]{\makebox[0pt]{\hspace{2\arraycolsep}\rule{0.5pt}{\baselineskip}}}\span\omit}" + "\n"
+        s += r"\newcommand\addline{\span\omit\raisebox{-1.4ex}[1ex][1ex]{\makebox[0pt]{\hspace{2\arraycolsep}\rule{0.5pt}{1.1\baselineskip}}}\span\omit}" + "\n"
         return s
     
     def get_latex(self, columns = 2):
@@ -104,10 +104,11 @@ class GaussSolution:
     
 
 def main():
-    mat = np.array([[ 2,  5,  7],
-                [ 6,  3,  4],
-                [ 5, -2, -3]])
-    solver = GaussSolution(mat)
+    mat = np.array([[ 2,  5,  7, 1, 0 ,0],
+                    [ 6,  3,  4, 0, 1, 0],
+                    [ 5, -2, -3, 0, 0, 1]])
+        
+    solver = GaussSolution(mat, 4)
     solver.add(0,2)
     solver.add(0,1,-1)
     solver.add(1,2,-1)
@@ -124,6 +125,7 @@ def main():
         # print(cmd)
     
     print(solver.get_latex())
+    # print(solver.get_latex_preamble())
 
 if __name__ == "__main__":
     main()
